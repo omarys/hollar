@@ -120,7 +120,7 @@ class ChatClient:
         if len(self.gui["name_widget"].get()) == 0:
             messagebox.showerror("Enter your name", "Enter your name to send a message")
             return
-        self.send_chat()
+        self.send_message()
         self.clear_text()
 
     def clear_text(self):
@@ -138,7 +138,7 @@ class ChatClient:
 
     # this function should get called when you want to close your app
     def close_chat(self):
-        if messagebox.messagebox.askokcancel("Quit", "Are you sure?"):
+        if messagebox.askokcancel("Quit", "Are you sure?"):
             self.root.destroy()
             self.socket.close()
             exit(0)
