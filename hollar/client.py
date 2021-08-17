@@ -1,3 +1,4 @@
+from time import sleep
 from tkinter import (
     Tk,
     Frame,
@@ -19,6 +20,8 @@ class ChatClient:
     # this is meant to hold your socket.  Access it with self.socket
     socket = None
 
+    run = True
+
     # this is meant to hold your gui.  Add items to the gui with self.gui["<itemname">] = <itemfunction>
     gui = {}
 
@@ -29,9 +32,12 @@ class ChatClient:
         self.gui["enter_text_widget"] = None
         self.gui["join_button"] = None
         self.address = (ip, port)
+        self.root = Tk()
         self.connect_to_server()
         self.create_gui()
         self.receive_message()
+        self.root.protocol("WM_DELETE_WINDOW", self.close_chat)
+        self.root.mainloop()
 
     # this function should get called by __init__ and create the socket, then assign the socket to self.socket
     def connect_to_server(self):
@@ -48,16 +54,17 @@ class ChatClient:
 
     # this function should be in it's own thread and it should listen on the socket for a message
     def receive_message(self):
-        thread = threading.Thread(
+        self.thread = threading.Thread(
             target=self.receive_message_from_server, args=(self.socket,)
         )
-        thread.start()
+        self.thread.start()
 
     def receive_message_from_server(self, so):
-        while True:
+        while self.run:
             buffer = so.recv(256)
             if not buffer:
-                break
+                sleep(0.1)
+                continue
             message = buffer.decode("utf-8")
             # client = ChatClient(root)
             # root.protocol("WM_DELETE_WINDOW", client.close_chat)
@@ -74,7 +81,7 @@ class ChatClient:
 
     def display_name_section(self):
         frame = Frame()
-        Label(frame, text="What's your name?: ", font=("Arial", 16)).pack(
+        Label(frame, text="What's your name?: ", font=("Serif", 16)).pack(
             side="left", padx=10
         )
         self.gui["name_widget"] = Entry(frame, width=50, borderwidth=2)
@@ -106,7 +113,7 @@ class ChatClient:
             frame, width=60, height=3, font=("Serif", 12)
         )
         self.gui["enter_text_widget"].pack(side="left", pady=15)
-        self.gui["enter_text_widget"].bind("<Return>", self.on_enter_key_pressed())
+        self.gui["enter_text_widget"].bind("<Return>", self.on_enter_key_pressed)
         frame.pack(side="top")
 
     def on_join(self):
@@ -116,7 +123,7 @@ class ChatClient:
         self.gui["name_widget"].config(state="disabled")
         self.socket.send(("joined: " + self.gui["name_widget"].get()).encode("utf-8"))
 
-    def on_enter_key_pressed(self):
+    def on_enter_key_pressed(self, evt):
         if len(self.gui["name_widget"].get()) == 0:
             messagebox.showerror("Enter your name", "Enter your name to send a message")
             return
@@ -127,31 +134,31 @@ class ChatClient:
         self.gui["enter_text_widget"].delete(1.0, "end")
 
     # this function should get called when you want to send a message
-    def send_message(self, message):
+    def send_message(self):
         senders_name = self.gui["name_widget"].get().strip() + ": "
         data = self.gui["enter_text_widget"].get(1.0, "end").strip()
-        message = (senders_name + data).endcode("utf-8")
+        message = (senders_name + data).encode("utf-8")
         self.gui["chat_transcript_area"].yview(END)
         self.socket.send(message)
+        self.gui["chat_transcript_area"].insert("end", message.decode("utf-8") + "\n")
+        self.gui["chat_transcript_area"].yview(END)
         self.gui["enter_text_widget"].delete(1.0, "end")
         return "break"
 
     # this function should get called when you want to close your app
     def close_chat(self):
         if messagebox.askokcancel("Quit", "Are you sure?"):
+            self.run = False
+            self.thread.join()
             self.root.destroy()
             self.socket.close()
             exit(0)
 
-    # this is your class' main function, it gets the party started, call it after __init__
-    def main(self):
-        # Set up these variables to receive input
-        chat.root = Tk()
-        chat.root.protocol("WM_DELETE_WINDOW", chat.close_chat)
 
-
-if __name__ == "__main__":
+def main():
     ip = "127.0.0.1"
     port = 9001
     chat = ChatClient(ip, port)
-    chat.main()
+
+if __name__ == "__main__":
+    main()
